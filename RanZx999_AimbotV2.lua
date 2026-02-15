@@ -433,7 +433,7 @@ Title.Name = "Title"
 Title.Size = UDim2.new(1, -120, 1, 0)
 Title.Position = UDim2.new(0, 20, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🎯 RanZx999 FIXED"
+Title.Text = "🎯 RanZx999 Hub"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
 Title.TextColor3 = Colors.Primary
@@ -454,6 +454,9 @@ StatusLabel.Parent = Topbar
 local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
+
+-- Make StatusLabel accessible globally for updates
+_G.RanZxStatusLabel = StatusLabel
 
 local ArrowButton = Instance.new("TextButton")
 ArrowButton.Name = "ArrowButton"
@@ -761,15 +764,21 @@ function CreateAimbotTab()
         Config.Aimlock.Enabled = val
         if val then
             StartAimlock()
-            StatusLabel.BackgroundColor3 = Colors.Toggle_On
-            StatusLabel.Text = "ON"
+            -- Update status label
+            if _G.RanZxStatusLabel then
+                _G.RanZxStatusLabel.BackgroundColor3 = Colors.Toggle_On
+                _G.RanZxStatusLabel.Text = "ON"
+            end
             Notify("🎯 Aimbot " .. (Config.Aimlock.LockMode and "LOCK" or "SMOOTH"), 2)
         else
             if AimlockConnection then AimlockConnection:Disconnect() end
             CurrentTarget = nil
             if CurrentOutline then CurrentOutline:Destroy() CurrentOutline = nil end
-            StatusLabel.BackgroundColor3 = Colors.Toggle_Off
-            StatusLabel.Text = "OFF"
+            -- Update status label
+            if _G.RanZxStatusLabel then
+                _G.RanZxStatusLabel.BackgroundColor3 = Colors.Toggle_Off
+                _G.RanZxStatusLabel.Text = "OFF"
+            end
             Notify("🎯 Aimbot OFF", 2)
         end
     end)

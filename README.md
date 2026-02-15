@@ -67,15 +67,8 @@
 
 ### Method 1: Direct Load (Recommended)
 ```lua
-loadstring(game:HttpGet("YOUR_RAW_GITHUB_URL_HERE"))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/RanZx999/Roblox-Esp-Aimbot/refs/heads/main/RanZx999_AimbotV2.lua'))()
 ```
-
-### Method 2: Manual Load
-1. Download `RanZx999_Hub_NoError.lua`
-2. Copy script content
-3. Paste ke executor favorit kamu
-4. Execute!
-
 ---
 
 ## 🎮 Usage
@@ -156,18 +149,6 @@ Team Check: ON
 > - May result in game/account bans
 > - Not responsible for any consequences
 > - Test in private servers first
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! If you'd like to improve this script:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 

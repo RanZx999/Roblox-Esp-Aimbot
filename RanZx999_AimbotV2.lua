@@ -1,13 +1,18 @@
 --[[
 ═══════════════════════════════════════════════════════════════
-  RanZx999 Hub FIXED - Aim Perfect & Clean
+  RanZx999 Hub - FINAL FIXED VERSION
 ═══════════════════════════════════════════════════════════════
 
-✅ Dropdown button style (CLICK to cycle)
-✅ Aim FIX - no more side offset!
-✅ Lock mode keras
-✅ NO FOV, NO Auto Pred
-✅ Head/Body/Random aim parts
+✅ AIM PERFECT - Tidak melenceng ke samping!
+✅ UI STABIL - Cheat tetap jalan meskipun UI di-close
+✅ Modern UI Library - Clean & Professional
+✅ Prediction FIXED - Hanya aktif saat perlu
+✅ Head/Body/Random dengan button dropdown
+
+CARA PAKAI:
+- INSERT: Buka/Tutup UI
+- DELETE: Destroy script
+- Cheat tetap jalan meskipun UI ditutup!
 
 Created by RanZx999
 ═══════════════════════════════════════════════════════════════
@@ -22,19 +27,20 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
---// COLORS
+--// MODERN COLORS
 local Colors = {
-    Background = Color3.fromRGB(255, 250, 252),
-    Primary = Color3.fromRGB(255, 182, 193),
-    Secondary = Color3.fromRGB(255, 218, 224),
-    Accent = Color3.fromRGB(255, 105, 180),
+    Background = Color3.fromRGB(25, 25, 30),
+    Secondary = Color3.fromRGB(30, 30, 35),
+    Primary = Color3.fromRGB(255, 105, 180),
+    Accent = Color3.fromRGB(255, 150, 200),
     White = Color3.fromRGB(255, 255, 255),
-    Text = Color3.fromRGB(80, 60, 70),
-    Border = Color3.fromRGB(255, 220, 230),
-    Toggle_On = Color3.fromRGB(255, 182, 193),
-    Toggle_Off = Color3.fromRGB(220, 200, 210),
-    TeamColor = Color3.fromRGB(0, 255, 0),
-    EnemyColor = Color3.fromRGB(255, 0, 0)
+    Text = Color3.fromRGB(230, 230, 230),
+    TextDark = Color3.fromRGB(150, 150, 150),
+    Toggle_On = Color3.fromRGB(255, 105, 180),
+    Toggle_Off = Color3.fromRGB(60, 60, 70),
+    Border = Color3.fromRGB(45, 45, 50),
+    Red = Color3.fromRGB(255, 50, 80),
+    Green = Color3.fromRGB(80, 255, 120)
 }
 
 --// CONFIG
@@ -42,13 +48,13 @@ local Config = {
     Aimlock = {
         Enabled = false,
         LockMode = true,
-        Smooth = 0.15,
-        Prediction = 0.125,
-        AimPart = "Head", -- Head, Body, Random
+        Smooth = 0.2,
+        Prediction = 0, -- FIX: Default 0 untuk aim perfect!
+        AimPart = "Head",
         WallCheck = true,
         TeamCheck = true,
         AutoAim = true,
-        VelocityThreshold = 3 -- FIX: Only predict if target moving faster than this
+        UsePrediction = false -- FIX: Toggle untuk prediction
     },
     ESP = {
         Enabled = false,
@@ -113,7 +119,6 @@ local function isVisible(targetPart, player)
     return false
 end
 
--- FIX: Get target part based on setting (Head/Body/Random)
 local function getTargetPart(char)
     local partName = Config.Aimlock.AimPart
     
@@ -127,7 +132,6 @@ local function getTargetPart(char)
     return char:FindFirstChild(partName) or char:FindFirstChild("HumanoidRootPart")
 end
 
--- FIX: No more FOV - just find closest to cursor
 local function GetClosestPlayerToCursor()
     local closestPlayer = nil
     local shortestDistance = math.huge
@@ -136,7 +140,6 @@ local function GetClosestPlayerToCursor()
         if player ~= LocalPlayer and isAlive(player) and player.Character then
             if Config.Aimlock.TeamCheck and isTeammate(player) then continue end
             
-            -- Use Head for detection, but actual aim uses getTargetPart
             local head = player.Character:FindFirstChild("Head")
             if head then
                 local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
@@ -157,7 +160,7 @@ end
 --// NOTIFICATION
 local function Notify(msg, dur)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "RanZx999", Text = msg, Duration = dur or 2
+        Title = "RanZx999 FIXED", Text = msg, Duration = dur or 2
     })
 end
 
@@ -168,16 +171,16 @@ local function CreateOutline(char)
     local h = Instance.new("Highlight")
     h.Name = "RanZxOutline"
     h.Adornee = char
-    h.FillColor = Colors.Accent
+    h.FillColor = Colors.Primary
     h.FillTransparency = 0.5
-    h.OutlineColor = Colors.Primary
+    h.OutlineColor = Colors.Accent
     h.OutlineTransparency = 0
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     h.Parent = char
     CurrentOutline = h
 end
 
---// AIMLOCK (FIXED!)
+--// AIMLOCK - FIXED VERSION (NO SIDE AIM!)
 local AimlockConnection = nil
 local function StartAimlock()
     if AimlockConnection then AimlockConnection:Disconnect() end
@@ -199,35 +202,43 @@ local function StartAimlock()
         
         if not CurrentTarget or not isAlive(CurrentTarget) then return end
         
-        -- FIX: Use dynamic target part (Head/Body/Random)
+        -- Get dynamic target part
         local targetPart = getTargetPart(CurrentTarget.Character)
         if not targetPart then return end
-        
-        local root = CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-        if not root then return end
         if not isVisible(targetPart, CurrentTarget) then return end
         
-        -- FIX: Only use prediction if target is moving fast enough
-        local velocity = root.AssemblyLinearVelocity or root.Velocity or Vector3.zero
-        local velocityMagnitude = velocity.Magnitude
+        -- FIX: Aim langsung ke posisi part tanpa offset berlebihan
+        local targetPos = targetPart.Position
         
-        local predictionOffset = Vector3.zero
-        if velocityMagnitude > Config.Aimlock.VelocityThreshold then
-            predictionOffset = velocity * Config.Aimlock.Prediction
+        -- OPTIONAL: Hanya gunakan prediction jika toggle aktif DAN target bergerak cepat
+        if Config.Aimlock.UsePrediction then
+            local root = CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local velocity = root.AssemblyLinearVelocity or root.Velocity or Vector3.zero
+                local velocityMag = velocity.Magnitude
+                
+                -- Hanya prediksi jika target lari kencang (> 10 studs/detik)
+                if velocityMag > 10 then
+                    targetPos = targetPos + (velocity * Config.Aimlock.Prediction)
+                end
+            end
         end
         
-        local targetPos = targetPart.Position + predictionOffset
-        
-        -- Apply Lock or Smooth mode
+        -- Apply aim
         if Config.Aimlock.LockMode then
+            -- Hard lock - snap langsung ke target
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
         else
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPos), Config.Aimlock.Smooth)
+            -- Smooth aim
+            Camera.CFrame = Camera.CFrame:Lerp(
+                CFrame.new(Camera.CFrame.Position, targetPos),
+                Config.Aimlock.Smooth
+            )
         end
     end)
 end
 
---// ESP
+--// ESP SYSTEM
 local function createESP(player)
     if player == LocalPlayer then return end
     ESPObjects[player] = {
@@ -284,7 +295,7 @@ local function updateESP()
             local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
             
             if onScreen and dist <= Config.ESP.MaxDistance then
-                local color = isTeammate(player) and Colors.TeamColor or Colors.EnemyColor
+                local color = isTeammate(player) and Colors.Green or Colors.Red
                 local size = Vector2.new(2000/dist, 2500/dist)
                 
                 esp.Box.Visible = Config.ESP.Boxes
@@ -346,8 +357,8 @@ local function updateHighlights()
                 hl.Name = "RanZxHL"
                 hl.Parent = char
             end
-            hl.FillColor = isTeammate(player) and Colors.TeamColor or Colors.EnemyColor
-            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.FillColor = isTeammate(player) and Colors.Green or Colors.Red
+            hl.OutlineColor = Colors.White
             hl.FillTransparency = 0.5
             hl.OutlineTransparency = 0
         elseif char then
@@ -357,12 +368,12 @@ local function updateHighlights()
     end
 end
 
+-- LOOPS (tetap jalan meskipun UI di-close!)
 table.insert(Connections, RunService.RenderStepped:Connect(function()
     updateESP()
     updateHighlights()
 end))
 
---// MISC
 table.insert(Connections, RunService.Heartbeat:Connect(function()
     local char = LocalPlayer.Character
     if char then
@@ -380,53 +391,79 @@ table.insert(Connections, RunService.Stepped:Connect(function()
     end
 end))
 
---// GUI
+--// MODERN UI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "RanZx999Hub"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 340, 0, 50)
-MainFrame.Position = UDim2.new(0.5, -170, 0, 20)
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 420, 0, 60)
+MainFrame.Position = UDim2.new(0.5, -210, 0, 30)
 MainFrame.BackgroundColor3 = Colors.Background
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Colors.Border
+MainStroke.Thickness = 1
+MainStroke.Parent = MainFrame
+
+-- Topbar
 local Topbar = Instance.new("Frame")
-Topbar.Size = UDim2.new(1, 0, 0, 50)
-Topbar.BackgroundColor3 = Colors.White
+Topbar.Name = "Topbar"
+Topbar.Size = UDim2.new(1, 0, 0, 60)
+Topbar.BackgroundColor3 = Colors.Secondary
 Topbar.BorderSizePixel = 0
 Topbar.Parent = MainFrame
 
 local TopbarCorner = Instance.new("UICorner")
-TopbarCorner.CornerRadius = UDim.new(0, 14)
+TopbarCorner.CornerRadius = UDim.new(0, 12)
 TopbarCorner.Parent = Topbar
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -90, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -120, 1, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "🎯 RanZx999 FIXED"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 18
 Title.TextColor3 = Colors.Primary
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Topbar
 
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "Status"
+StatusLabel.Size = UDim2.new(0, 60, 0, 20)
+StatusLabel.Position = UDim2.new(1, -140, 0.5, -10)
+StatusLabel.BackgroundColor3 = Colors.Toggle_Off
+StatusLabel.Text = "OFF"
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextSize = 11
+StatusLabel.TextColor3 = Colors.White
+StatusLabel.Parent = Topbar
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 6)
+StatusCorner.Parent = StatusLabel
+
 local ArrowButton = Instance.new("TextButton")
-ArrowButton.Size = UDim2.new(0, 40, 0, 40)
-ArrowButton.Position = UDim2.new(1, -45, 0.5, -20)
+ArrowButton.Name = "ArrowButton"
+ArrowButton.Size = UDim2.new(0, 50, 0, 50)
+ArrowButton.Position = UDim2.new(1, -55, 0.5, -25)
 ArrowButton.BackgroundColor3 = Colors.Primary
 ArrowButton.BorderSizePixel = 0
 ArrowButton.Text = "▼"
 ArrowButton.Font = Enum.Font.GothamBold
-ArrowButton.TextSize = 18
+ArrowButton.TextSize = 20
 ArrowButton.TextColor3 = Colors.White
 ArrowButton.AutoButtonColor = false
 ArrowButton.Parent = Topbar
@@ -435,9 +472,11 @@ local ArrowCorner = Instance.new("UICorner")
 ArrowCorner.CornerRadius = UDim.new(0, 10)
 ArrowCorner.Parent = ArrowButton
 
+-- Tab Container
 local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, 0, 0, 35)
-TabContainer.Position = UDim2.new(0, 0, 0, 55)
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, 0, 0, 40)
+TabContainer.Position = UDim2.new(0, 0, 0, 65)
 TabContainer.BackgroundColor3 = Colors.Secondary
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = MainFrame
@@ -445,14 +484,17 @@ TabContainer.Parent = MainFrame
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
 TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabLayout.Padding = UDim.new(0, 2)
 TabLayout.Parent = TabContainer
 
+-- Content Frame
 local ContentFrame = Instance.new("ScrollingFrame")
-ContentFrame.Size = UDim2.new(1, -10, 0, 350)
-ContentFrame.Position = UDim2.new(0, 5, 0, 95)
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -10, 0, 420)
+ContentFrame.Position = UDim2.new(0, 5, 0, 110)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.BorderSizePixel = 0
-ContentFrame.ScrollBarThickness = 4
+ContentFrame.ScrollBarThickness = 5
 ContentFrame.ScrollBarImageColor3 = Colors.Primary
 ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ContentFrame.Parent = MainFrame
@@ -469,15 +511,21 @@ end)
 --// UI FUNCTIONS
 local function CreateTab(name)
     local btn = Instance.new("TextButton")
+    btn.Name = name.."Tab"
     btn.Size = UDim2.new(0.33, -2, 1, 0)
-    btn.BackgroundColor3 = Colors.White
+    btn.BackgroundColor3 = Colors.Background
     btn.BorderSizePixel = 0
     btn.Text = name
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
+    btn.TextSize = 13
     btn.TextColor3 = Colors.Text
     btn.AutoButtonColor = false
     btn.Parent = TabContainer
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+    
     return btn
 end
 
@@ -486,9 +534,9 @@ local ESPTab = CreateTab("ESP")
 local MiscTab = CreateTab("Misc")
 
 local function SwitchTab(tabName)
-    AimbotTab.BackgroundColor3 = tabName == "Aimbot" and Colors.Primary or Colors.White
-    ESPTab.BackgroundColor3 = tabName == "ESP" and Colors.Primary or Colors.White
-    MiscTab.BackgroundColor3 = tabName == "Misc" and Colors.Primary or Colors.White
+    AimbotTab.BackgroundColor3 = tabName == "Aimbot" and Colors.Primary or Colors.Background
+    ESPTab.BackgroundColor3 = tabName == "ESP" and Colors.Primary or Colors.Background
+    MiscTab.BackgroundColor3 = tabName == "Misc" and Colors.Primary or Colors.Background
     
     for _, child in pairs(ContentFrame:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
@@ -505,29 +553,29 @@ MiscTab.MouseButton1Click:Connect(function() SwitchTab("Misc") end)
 
 local function CreateToggle(text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 30)
-    frame.BackgroundColor3 = Colors.White
+    frame.Size = UDim2.new(1, 0, 0, 38)
+    frame.BackgroundColor3 = Colors.Secondary
     frame.BorderSizePixel = 0
     frame.Parent = ContentFrame
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -55, 1, 0)
-    label.Position = UDim2.new(0, 8, 0, 0)
+    label.Size = UDim2.new(1, -65, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.Font = Enum.Font.Gotham
-    label.TextSize = 12
+    label.TextSize = 13
     label.TextColor3 = Colors.Text
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 40, 0, 18)
-    button.Position = UDim2.new(1, -45, 0.5, -9)
+    button.Size = UDim2.new(0, 48, 0, 24)
+    button.Position = UDim2.new(1, -56, 0.5, -12)
     button.BackgroundColor3 = default and Colors.Toggle_On or Colors.Toggle_Off
     button.BorderSizePixel = 0
     button.Text = ""
@@ -539,8 +587,8 @@ local function CreateToggle(text, default, callback)
     buttonCorner.Parent = button
     
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    knob.Size = UDim2.new(0, 18, 0, 18)
+    knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
     knob.BackgroundColor3 = Colors.White
     knob.BorderSizePixel = 0
     knob.Parent = button
@@ -553,47 +601,47 @@ local function CreateToggle(text, default, callback)
     button.MouseButton1Click:Connect(function()
         enabled = not enabled
         TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = enabled and Colors.Toggle_On or Colors.Toggle_Off}):Play()
-        TweenService:Create(knob, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
         if callback then callback(enabled) end
     end)
 end
 
 local function CreateSlider(text, min, max, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = Colors.White
+    frame.Size = UDim2.new(1, 0, 0, 50)
+    frame.BackgroundColor3 = Colors.Secondary
     frame.BorderSizePixel = 0
     frame.Parent = ContentFrame
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
     
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 0, 18)
-    label.Position = UDim2.new(0, 8, 0, 4)
+    label.Size = UDim2.new(0.7, 0, 0, 22)
+    label.Position = UDim2.new(0, 12, 0, 6)
     label.BackgroundTransparency = 1
     label.Text = text
     label.Font = Enum.Font.Gotham
-    label.TextSize = 11
+    label.TextSize = 12
     label.TextColor3 = Colors.Text
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local valueLabel = Instance.new("TextLabel")
-    valueLabel.Size = UDim2.new(0.3, -8, 0, 18)
-    valueLabel.Position = UDim2.new(0.7, 0, 0, 4)
+    valueLabel.Size = UDim2.new(0.3, -12, 0, 22)
+    valueLabel.Position = UDim2.new(0.7, 0, 0, 6)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = tostring(default)
     valueLabel.Font = Enum.Font.GothamBold
-    valueLabel.TextSize = 11
-    valueLabel.TextColor3 = Colors.Accent
+    valueLabel.TextSize = 13
+    valueLabel.TextColor3 = Colors.Primary
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.Parent = frame
     
     local track = Instance.new("Frame")
-    track.Size = UDim2.new(1, -16, 0, 3)
-    track.Position = UDim2.new(0, 8, 1, -10)
+    track.Size = UDim2.new(1, -24, 0, 4)
+    track.Position = UDim2.new(0, 12, 1, -14)
     track.BackgroundColor3 = Colors.Border
     track.BorderSizePixel = 0
     track.Parent = frame
@@ -613,9 +661,9 @@ local function CreateSlider(text, min, max, default, callback)
     fillCorner.Parent = fill
     
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 12, 0, 12)
-    knob.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
-    knob.BackgroundColor3 = Colors.Accent
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7)
+    knob.BackgroundColor3 = Colors.White
     knob.BorderSizePixel = 0
     knob.Parent = track
     
@@ -629,27 +677,33 @@ local function CreateSlider(text, min, max, default, callback)
         local mousePos = input.Position.X - track.AbsolutePosition.X
         local percent = math.clamp(mousePos / trackSize, 0, 1)
         local value = min + (max - min) * percent
-        value = math.floor(value * 1000 + 0.5) / 1000
+        value = math.floor(value * 100 + 0.5) / 100
         valueLabel.Text = tostring(value)
         fill.Size = UDim2.new(percent, 0, 1, 0)
-        knob.Position = UDim2.new(percent, -6, 0.5, -6)
+        knob.Position = UDim2.new(percent, -7, 0.5, -7)
         if callback then callback(value) end
     end
     
     track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true update(input) end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            update(input)
+        end
     end)
     
     track.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            update(input)
+        end
     end)
 end
 
--- BUTTON-STYLE DROPDOWN (CLICK TO CYCLE)
 local function CreateButtonDropdown(text, options, default, callback)
     local currentIndex = 1
     for i, opt in ipairs(options) do
@@ -657,40 +711,40 @@ local function CreateButtonDropdown(text, options, default, callback)
     end
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 30)
-    frame.BackgroundColor3 = Colors.White
+    frame.Size = UDim2.new(1, 0, 0, 38)
+    frame.BackgroundColor3 = Colors.Secondary
     frame.BorderSizePixel = 0
     frame.Parent = ContentFrame
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.35, 0, 1, 0)
-    label.Position = UDim2.new(0, 8, 0, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = text
     label.Font = Enum.Font.Gotham
-    label.TextSize = 11
+    label.TextSize = 12
     label.TextColor3 = Colors.Text
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.65, -12, 0, 22)
-    button.Position = UDim2.new(0.35, 4, 0.5, -11)
+    button.Size = UDim2.new(0.65, -18, 0, 28)
+    button.Position = UDim2.new(0.35, 6, 0.5, -14)
     button.BackgroundColor3 = Colors.Primary
     button.BorderSizePixel = 0
     button.Text = "< " .. options[currentIndex] .. " >"
     button.Font = Enum.Font.GothamBold
-    button.TextSize = 11
+    button.TextSize = 12
     button.TextColor3 = Colors.White
     button.AutoButtonColor = false
     button.Parent = frame
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 5)
+    btnCorner.CornerRadius = UDim.new(0, 6)
     btnCorner.Parent = button
     
     button.MouseButton1Click:Connect(function()
@@ -707,41 +761,44 @@ function CreateAimbotTab()
         Config.Aimlock.Enabled = val
         if val then
             StartAimlock()
+            StatusLabel.BackgroundColor3 = Colors.Toggle_On
+            StatusLabel.Text = "ON"
             Notify("🎯 Aimbot " .. (Config.Aimlock.LockMode and "LOCK" or "SMOOTH"), 2)
         else
             if AimlockConnection then AimlockConnection:Disconnect() end
             CurrentTarget = nil
             if CurrentOutline then CurrentOutline:Destroy() CurrentOutline = nil end
+            StatusLabel.BackgroundColor3 = Colors.Toggle_Off
+            StatusLabel.Text = "OFF"
             Notify("🎯 Aimbot OFF", 2)
         end
     end)
     
-    CreateToggle("🔒 LOCK Mode", true, function(val)
+    CreateToggle("🔒 LOCK Mode (Instant)", true, function(val)
         Config.Aimlock.LockMode = val
-        Notify(val and "🔒 LOCK!" or "🌊 SMOOTH", 2)
+        Notify(val and "🔒 LOCK MODE!" or "🌊 SMOOTH MODE", 2)
     end)
     
-    CreateToggle("🤖 Auto Aim", true, function(val)
+    CreateToggle("🤖 Auto Target", true, function(val)
         Config.Aimlock.AutoAim = val
     end)
     
-    -- FIX: Button dropdown for aim parts
     CreateButtonDropdown("Aim Part", {"Head", "Body", "Random"}, "Head", function(val)
         Config.Aimlock.AimPart = val
-        Notify("Aim: " .. val, 1.5)
+        Notify("Targeting: " .. val, 1.5)
     end)
     
-    CreateSlider("Smoothness", 0.05, 0.5, 0.15, function(val)
+    CreateToggle("⚡ Use Prediction", false, function(val)
+        Config.Aimlock.UsePrediction = val
+        Notify(val and "⚡ Prediction ON" or "🎯 Direct Aim (Recommended)", 2)
+    end)
+    
+    CreateSlider("Smoothness", 0.05, 0.5, 0.2, function(val)
         Config.Aimlock.Smooth = val
     end)
     
-    CreateSlider("Prediction", 0, 0.3, 0.125, function(val)
+    CreateSlider("Prediction Value", 0, 0.3, 0, function(val)
         Config.Aimlock.Prediction = val
-    end)
-    
-    -- FIX: Velocity threshold slider
-    CreateSlider("Vel Threshold", 0, 10, 3, function(val)
-        Config.Aimlock.VelocityThreshold = val
     end)
     
     CreateToggle("✅ Wall Check", true, function(val)
@@ -752,7 +809,7 @@ function CreateAimbotTab()
         Config.Aimlock.TeamCheck = val
     end)
     
-    CreateToggle("✨ Outline", true, function(val)
+    CreateToggle("✨ Target Outline", true, function(val)
         Config.OutlineTarget = val
     end)
 end
@@ -760,24 +817,34 @@ end
 function CreateESPTab()
     CreateToggle("🔍 Enable ESP", false, function(val)
         Config.ESP.Enabled = val
-        if val then for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then createESP(p) end end end
+        if val then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then createESP(p) end
+            end
+        end
     end)
     CreateToggle("📦 Boxes", true, function(val) Config.ESP.Boxes = val end)
     CreateToggle("👤 Names", true, function(val) Config.ESP.Names = val end)
     CreateToggle("📏 Distance", true, function(val) Config.ESP.Distance = val end)
-    CreateToggle("❤️ Health", true, function(val) Config.ESP.Health = val end)
+    CreateToggle("❤️ Health Bar", true, function(val) Config.ESP.Health = val end)
     CreateToggle("📍 Tracers", false, function(val) Config.ESP.Tracers = val end)
     CreateToggle("✅ Team Check", true, function(val) Config.ESP.TeamCheck = val end)
     CreateSlider("Max Distance", 500, 5000, 2000, function(val) Config.ESP.MaxDistance = val end)
-    CreateToggle("✨ Highlight", false, function(val) Config.Highlight.Enabled = val end)
-    CreateToggle("✅ HL Team", true, function(val) Config.Highlight.TeamCheck = val end)
-    CreateToggle("👥 Show Team", false, function(val) Config.Highlight.ShowTeam = val end)
+    CreateToggle("✨ Highlight ESP", false, function(val) Config.Highlight.Enabled = val end)
+    CreateToggle("✅ HL Team Check", true, function(val) Config.Highlight.TeamCheck = val end)
+    CreateToggle("👥 Show Team HL", false, function(val) Config.Highlight.ShowTeam = val end)
 end
 
 function CreateMiscTab()
-    CreateToggle("⚡ Walkspeed", false, function(val) Config.Walkspeed.Enabled = val end)
-    CreateSlider("Speed", 16, 300, 50, function(val) Config.Walkspeed.Speed = val end)
-    CreateToggle("👻 Noclip", false, function(val) Config.Noclip.Enabled = val end)
+    CreateToggle("⚡ Walkspeed", false, function(val)
+        Config.Walkspeed.Enabled = val
+    end)
+    CreateSlider("Speed", 16, 300, 50, function(val)
+        Config.Walkspeed.Speed = val
+    end)
+    CreateToggle("👻 Noclip", false, function(val)
+        Config.Noclip.Enabled = val
+    end)
 end
 
 SwitchTab("Aimbot")
@@ -785,22 +852,25 @@ SwitchTab("Aimbot")
 --// KEYBINDS
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.Insert then MainFrame.Visible = not MainFrame.Visible end
+    if input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
     if input.KeyCode == Enum.KeyCode.Delete then
         for _, conn in pairs(Connections) do conn:Disconnect() end
         for player, _ in pairs(ESPObjects) do removeESP(player) end
+        if AimlockConnection then AimlockConnection:Disconnect() end
         if CurrentOutline then CurrentOutline:Destroy() end
         ScreenGui:Destroy()
-        Notify("Destroyed!", 2)
+        Notify("Script Destroyed!", 2)
     end
 end)
 
---// EXPAND
+--// EXPAND/COLLAPSE
 local IsExpanded = false
 ArrowButton.MouseButton1Click:Connect(function()
     IsExpanded = not IsExpanded
     TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-        Size = UDim2.new(0, 340, 0, IsExpanded and 485 or 50)
+        Size = UDim2.new(0, 420, 0, IsExpanded and 540 or 60)
     }):Play()
     TweenService:Create(ArrowButton, TweenInfo.new(0.2), {Rotation = IsExpanded and 180 or 0}):Play()
     ArrowButton.Text = IsExpanded and "▲" or "▼"
@@ -838,11 +908,12 @@ for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then createESP(p)
 
 wait(1)
 Notify("🎯 RanZx999 FIXED Loaded!", 3)
-Notify("✅ Aim fixed - no side offset!", 2)
+Notify("✅ Aim perfect - No side offset!", 2)
 print("═══════════════════════════════════════════════════════")
-print("🎯 RanZx999 FIXED - AIM PERFECT!")
-print("✅ Velocity threshold added - no more side aim!")
-print("✅ Head/Body/Random aim parts working!")
-print("✅ FOV & Auto Pred removed!")
-print("✅ Button dropdown - CLICK to cycle!")
+print("🎯 RanZx999 FIXED - ULTIMATE VERSION!")
+print("✅ AIM PERFECT - Langsung ke center target!")
+print("✅ UI STABIL - Cheat tetap jalan meski UI ditutup!")
+print("✅ Modern UI - Clean & Professional!")
+print("✅ Prediction default 0 - Aim langsung!")
+print("✅ INSERT: Toggle UI | DELETE: Destroy")
 print("═══════════════════════════════════════════════════════")

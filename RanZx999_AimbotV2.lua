@@ -10,6 +10,7 @@
 
 KEYBINDS:
 - INSERT: Toggle UI
+- H: Toggle Aimbot ON/OFF
 - DELETE: Destroy script
 
 Created by RanZx999
@@ -844,9 +845,32 @@ SwitchTab("Aimbot")
 --// KEYBINDS
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
+    
+    -- Toggle UI
     if input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
     end
+    
+    -- Toggle Aimbot (H key)
+    if input.KeyCode == Enum.KeyCode.H then
+        Config.Aimlock.Enabled = not Config.Aimlock.Enabled
+        
+        if Config.Aimlock.Enabled then
+            StartAimlock()
+            StatusLabel.BackgroundColor3 = Colors.Toggle_On
+            StatusLabel.Text = "ON"
+            Notify("🎯 Aimbot ON [H]", 2)
+        else
+            if AimlockConnection then AimlockConnection:Disconnect() end
+            CurrentTarget = nil
+            if CurrentOutline then CurrentOutline:Destroy() CurrentOutline = nil end
+            StatusLabel.BackgroundColor3 = Colors.Toggle_Off
+            StatusLabel.Text = "OFF"
+            Notify("🎯 Aimbot OFF [H]", 2)
+        end
+    end
+    
+    -- Destroy script
     if input.KeyCode == Enum.KeyCode.Delete then
         for _, conn in pairs(Connections) do conn:Disconnect() end
         for player, _ in pairs(ESPObjects) do removeESP(player) end
@@ -900,11 +924,14 @@ for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then createESP(p)
 
 wait(1)
 Notify("🎯 RanZx999 Hub Loaded!", 3)
-Notify("✅ NO FILE ERROR - Fixed!", 2)
+Notify("✅ Press H to toggle aimbot!", 2)
 print("═══════════════════════════════════════════════════════")
 print("🎯 RanZx999 Hub - NO ERROR VERSION!")
 print("✅ AIM PERFECT - No side offset!")
 print("✅ STATUS SYNC - Toggle and label synced!")
 print("✅ NO FILE ERROR - No writefile/readfile!")
-print("✅ INSERT: Toggle UI | DELETE: Destroy")
+print("✅ KEYBINDS:")
+print("   - INSERT: Toggle UI")
+print("   - H: Toggle Aimbot")
+print("   - DELETE: Destroy Script")
 print("═══════════════════════════════════════════════════════")

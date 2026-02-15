@@ -19,7 +19,7 @@
 
 ### Main Interface
 <!-- Tambahkan screenshot UI utama di sini -->
-![Main UI](https://via.placeholder.com/800x450.png?text=Main+Interface+Screenshot)
+![Main UI](https://raw.githubusercontent.com/RanZx999/AllimageE/refs/heads/main/Screenshot%202026-02-15%20195954.png)
 
 ### Aimbot Tab
 <!-- Tambahkan screenshot tab aimbot di sini -->

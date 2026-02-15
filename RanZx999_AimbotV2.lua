@@ -1,18 +1,18 @@
 --[[
 ═══════════════════════════════════════════════════════════════
-  RanZx999 Hub - FINAL FIXED VERSION
+  RanZx999 Hub - FINAL VERSION with Save Settings
 ═══════════════════════════════════════════════════════════════
 
-✅ AIM PERFECT - Tidak melenceng ke samping!
-✅ UI STABIL - Cheat tetap jalan meskipun UI di-close
-✅ Modern UI Library - Clean & Professional
-✅ Prediction FIXED - Hanya aktif saat perlu
-✅ Head/Body/Random dengan button dropdown
+✅ AIM PERFECT - Tidak melenceng!
+✅ UI STABIL - Cheat tetap jalan meski UI ditutup
+✅ SAVE SETTINGS - Auto save config
+✅ STATUS SYNC - Toggle dan status sinkron
+✅ Modern UI - Clean & Professional
 
-CARA PAKAI:
-- INSERT: Buka/Tutup UI
+KEYBINDS:
+- INSERT: Toggle UI
 - DELETE: Destroy script
-- Cheat tetap jalan meskipun UI ditutup!
+- END: Save settings
 
 Created by RanZx999
 ═══════════════════════════════════════════════════════════════
@@ -23,6 +23,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
@@ -49,12 +50,12 @@ local Config = {
         Enabled = false,
         LockMode = true,
         Smooth = 0.2,
-        Prediction = 0, -- FIX: Default 0 untuk aim perfect!
+        Prediction = 0,
         AimPart = "Head",
         WallCheck = true,
         TeamCheck = true,
         AutoAim = true,
-        UsePrediction = false -- FIX: Toggle untuk prediction
+        UsePrediction = false
     },
     ESP = {
         Enabled = false,
@@ -76,11 +77,42 @@ local Config = {
     OutlineTarget = true
 }
 
+--// SAVE/LOAD CONFIG
+local ConfigFile = "RanZx999Hub_Config.json"
+
+local function SaveConfig()
+    local success = pcall(function()
+        writefile(ConfigFile, HttpService:JSONEncode(Config))
+    end)
+    if success then
+        Notify("💾 Settings Saved!", 2)
+    end
+end
+
+local function LoadConfig()
+    local success, data = pcall(function()
+        return readfile(ConfigFile)
+    end)
+    if success and data then
+        local decoded = HttpService:JSONDecode(data)
+        for category, settings in pairs(decoded) do
+            if Config[category] then
+                for key, value in pairs(settings) do
+                    Config[category][key] = value
+                end
+            end
+        end
+        return true
+    end
+    return false
+end
+
 --// STATE
 local CurrentTarget = nil
 local CurrentOutline = nil
 local Connections = {}
 local ESPObjects = {}
+local ToggleCallbacks = {} -- Store toggle update functions
 
 --// UTILITIES
 local function isAlive(plr)
@@ -160,7 +192,7 @@ end
 --// NOTIFICATION
 local function Notify(msg, dur)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "RanZx999 FIXED", Text = msg, Duration = dur or 2
+        Title = "RanZx999 Hub", Text = msg, Duration = dur or 2
     })
 end
 
@@ -180,7 +212,7 @@ local function CreateOutline(char)
     CurrentOutline = h
 end
 
---// AIMLOCK - FIXED VERSION (NO SIDE AIM!)
+--// AIMLOCK - PERFECT AIM
 local AimlockConnection = nil
 local function StartAimlock()
     if AimlockConnection then AimlockConnection:Disconnect() end
@@ -188,7 +220,6 @@ local function StartAimlock()
     AimlockConnection = RunService.RenderStepped:Connect(function()
         if not Config.Aimlock.Enabled then return end
         
-        -- Auto-find closest target
         if Config.Aimlock.AutoAim then
             CurrentTarget = GetClosestPlayerToCursor()
             if CurrentTarget and CurrentTarget.Character then
@@ -202,34 +233,29 @@ local function StartAimlock()
         
         if not CurrentTarget or not isAlive(CurrentTarget) then return end
         
-        -- Get dynamic target part
         local targetPart = getTargetPart(CurrentTarget.Character)
         if not targetPart then return end
         if not isVisible(targetPart, CurrentTarget) then return end
         
-        -- FIX: Aim langsung ke posisi part tanpa offset berlebihan
+        -- FIX: Aim langsung ke center tanpa offset
         local targetPos = targetPart.Position
         
-        -- OPTIONAL: Hanya gunakan prediction jika toggle aktif DAN target bergerak cepat
+        -- Optional prediction (hanya jika aktif dan target lari kencang)
         if Config.Aimlock.UsePrediction then
             local root = CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
             if root then
                 local velocity = root.AssemblyLinearVelocity or root.Velocity or Vector3.zero
                 local velocityMag = velocity.Magnitude
                 
-                -- Hanya prediksi jika target lari kencang (> 10 studs/detik)
                 if velocityMag > 10 then
                     targetPos = targetPos + (velocity * Config.Aimlock.Prediction)
                 end
             end
         end
         
-        -- Apply aim
         if Config.Aimlock.LockMode then
-            -- Hard lock - snap langsung ke target
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
         else
-            -- Smooth aim
             Camera.CFrame = Camera.CFrame:Lerp(
                 CFrame.new(Camera.CFrame.Position, targetPos),
                 Config.Aimlock.Smooth
@@ -368,7 +394,7 @@ local function updateHighlights()
     end
 end
 
--- LOOPS (tetap jalan meskipun UI di-close!)
+-- LOOPS
 table.insert(Connections, RunService.RenderStepped:Connect(function()
     updateESP()
     updateHighlights()
@@ -455,8 +481,13 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
 
--- Make StatusLabel accessible globally for updates
-_G.RanZxStatusLabel = StatusLabel
+-- Global status update function
+_G.UpdateAimbotStatus = function(enabled)
+    if StatusLabel then
+        StatusLabel.BackgroundColor3 = enabled and Colors.Toggle_On or Colors.Toggle_Off
+        StatusLabel.Text = enabled and "ON" or "OFF"
+    end
+end
 
 local ArrowButton = Instance.new("TextButton")
 ArrowButton.Name = "ArrowButton"
@@ -554,7 +585,7 @@ AimbotTab.MouseButton1Click:Connect(function() SwitchTab("Aimbot") end)
 ESPTab.MouseButton1Click:Connect(function() SwitchTab("ESP") end)
 MiscTab.MouseButton1Click:Connect(function() SwitchTab("Misc") end)
 
-local function CreateToggle(text, default, callback)
+local function CreateToggle(text, default, callback, configPath)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 38)
     frame.BackgroundColor3 = Colors.Secondary
@@ -601,12 +632,25 @@ local function CreateToggle(text, default, callback)
     knobCorner.Parent = knob
     
     local enabled = default
+    
+    -- Store update function
+    local updateFunc = function(val)
+        enabled = val
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = val and Colors.Toggle_On or Colors.Toggle_Off}):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {Position = val and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+    end
+    
+    if configPath then
+        ToggleCallbacks[configPath] = updateFunc
+    end
+    
     button.MouseButton1Click:Connect(function()
         enabled = not enabled
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = enabled and Colors.Toggle_On or Colors.Toggle_Off}):Play()
-        TweenService:Create(knob, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+        updateFunc(enabled)
         if callback then callback(enabled) end
     end)
+    
+    return updateFunc
 end
 
 local function CreateSlider(text, min, max, default, callback)
@@ -760,100 +804,115 @@ end
 
 --// TAB CONTENTS
 function CreateAimbotTab()
-    CreateToggle("🎯 Enable Aimbot", false, function(val)
+    local aimbotToggleUpdate = CreateToggle("🎯 Enable Aimbot", Config.Aimlock.Enabled, function(val)
         Config.Aimlock.Enabled = val
         if val then
             StartAimlock()
-            -- Update status label
-            if _G.RanZxStatusLabel then
-                _G.RanZxStatusLabel.BackgroundColor3 = Colors.Toggle_On
-                _G.RanZxStatusLabel.Text = "ON"
-            end
+            _G.UpdateAimbotStatus(true)
             Notify("🎯 Aimbot " .. (Config.Aimlock.LockMode and "LOCK" or "SMOOTH"), 2)
         else
             if AimlockConnection then AimlockConnection:Disconnect() end
             CurrentTarget = nil
             if CurrentOutline then CurrentOutline:Destroy() CurrentOutline = nil end
-            -- Update status label
-            if _G.RanZxStatusLabel then
-                _G.RanZxStatusLabel.BackgroundColor3 = Colors.Toggle_Off
-                _G.RanZxStatusLabel.Text = "OFF"
-            end
+            _G.UpdateAimbotStatus(false)
             Notify("🎯 Aimbot OFF", 2)
         end
-    end)
+        SaveConfig()
+    end, "Aimlock.Enabled")
     
-    CreateToggle("🔒 LOCK Mode (Instant)", true, function(val)
+    -- Update toggle UI to match config
+    aimbotToggleUpdate(Config.Aimlock.Enabled)
+    _G.UpdateAimbotStatus(Config.Aimlock.Enabled)
+    
+    CreateToggle("🔒 LOCK Mode (Instant)", Config.Aimlock.LockMode, function(val)
         Config.Aimlock.LockMode = val
         Notify(val and "🔒 LOCK MODE!" or "🌊 SMOOTH MODE", 2)
+        SaveConfig()
     end)
     
-    CreateToggle("🤖 Auto Target", true, function(val)
+    CreateToggle("🤖 Auto Target", Config.Aimlock.AutoAim, function(val)
         Config.Aimlock.AutoAim = val
+        SaveConfig()
     end)
     
-    CreateButtonDropdown("Aim Part", {"Head", "Body", "Random"}, "Head", function(val)
+    CreateButtonDropdown("Aim Part", {"Head", "Body", "Random"}, Config.Aimlock.AimPart, function(val)
         Config.Aimlock.AimPart = val
         Notify("Targeting: " .. val, 1.5)
+        SaveConfig()
     end)
     
-    CreateToggle("⚡ Use Prediction", false, function(val)
+    CreateToggle("⚡ Use Prediction", Config.Aimlock.UsePrediction, function(val)
         Config.Aimlock.UsePrediction = val
-        Notify(val and "⚡ Prediction ON" or "🎯 Direct Aim (Recommended)", 2)
+        Notify(val and "⚡ Prediction ON" or "🎯 Direct Aim", 2)
+        SaveConfig()
     end)
     
-    CreateSlider("Smoothness", 0.05, 0.5, 0.2, function(val)
+    CreateSlider("Smoothness", 0.05, 0.5, Config.Aimlock.Smooth, function(val)
         Config.Aimlock.Smooth = val
+        SaveConfig()
     end)
     
-    CreateSlider("Prediction Value", 0, 0.3, 0, function(val)
+    CreateSlider("Prediction Value", 0, 0.3, Config.Aimlock.Prediction, function(val)
         Config.Aimlock.Prediction = val
+        SaveConfig()
     end)
     
-    CreateToggle("✅ Wall Check", true, function(val)
+    CreateToggle("✅ Wall Check", Config.Aimlock.WallCheck, function(val)
         Config.Aimlock.WallCheck = val
+        SaveConfig()
     end)
     
-    CreateToggle("✅ Team Check", true, function(val)
+    CreateToggle("✅ Team Check", Config.Aimlock.TeamCheck, function(val)
         Config.Aimlock.TeamCheck = val
+        SaveConfig()
     end)
     
-    CreateToggle("✨ Target Outline", true, function(val)
+    CreateToggle("✨ Target Outline", Config.OutlineTarget, function(val)
         Config.OutlineTarget = val
+        SaveConfig()
     end)
 end
 
 function CreateESPTab()
-    CreateToggle("🔍 Enable ESP", false, function(val)
+    CreateToggle("🔍 Enable ESP", Config.ESP.Enabled, function(val)
         Config.ESP.Enabled = val
         if val then
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer then createESP(p) end
             end
         end
+        SaveConfig()
     end)
-    CreateToggle("📦 Boxes", true, function(val) Config.ESP.Boxes = val end)
-    CreateToggle("👤 Names", true, function(val) Config.ESP.Names = val end)
-    CreateToggle("📏 Distance", true, function(val) Config.ESP.Distance = val end)
-    CreateToggle("❤️ Health Bar", true, function(val) Config.ESP.Health = val end)
-    CreateToggle("📍 Tracers", false, function(val) Config.ESP.Tracers = val end)
-    CreateToggle("✅ Team Check", true, function(val) Config.ESP.TeamCheck = val end)
-    CreateSlider("Max Distance", 500, 5000, 2000, function(val) Config.ESP.MaxDistance = val end)
-    CreateToggle("✨ Highlight ESP", false, function(val) Config.Highlight.Enabled = val end)
-    CreateToggle("✅ HL Team Check", true, function(val) Config.Highlight.TeamCheck = val end)
-    CreateToggle("👥 Show Team HL", false, function(val) Config.Highlight.ShowTeam = val end)
+    CreateToggle("📦 Boxes", Config.ESP.Boxes, function(val) Config.ESP.Boxes = val SaveConfig() end)
+    CreateToggle("👤 Names", Config.ESP.Names, function(val) Config.ESP.Names = val SaveConfig() end)
+    CreateToggle("📏 Distance", Config.ESP.Distance, function(val) Config.ESP.Distance = val SaveConfig() end)
+    CreateToggle("❤️ Health Bar", Config.ESP.Health, function(val) Config.ESP.Health = val SaveConfig() end)
+    CreateToggle("📍 Tracers", Config.ESP.Tracers, function(val) Config.ESP.Tracers = val SaveConfig() end)
+    CreateToggle("✅ Team Check", Config.ESP.TeamCheck, function(val) Config.ESP.TeamCheck = val SaveConfig() end)
+    CreateSlider("Max Distance", 500, 5000, Config.ESP.MaxDistance, function(val) Config.ESP.MaxDistance = val SaveConfig() end)
+    CreateToggle("✨ Highlight ESP", Config.Highlight.Enabled, function(val) Config.Highlight.Enabled = val SaveConfig() end)
+    CreateToggle("✅ HL Team Check", Config.Highlight.TeamCheck, function(val) Config.Highlight.TeamCheck = val SaveConfig() end)
+    CreateToggle("👥 Show Team HL", Config.Highlight.ShowTeam, function(val) Config.Highlight.ShowTeam = val SaveConfig() end)
 end
 
 function CreateMiscTab()
-    CreateToggle("⚡ Walkspeed", false, function(val)
+    CreateToggle("⚡ Walkspeed", Config.Walkspeed.Enabled, function(val)
         Config.Walkspeed.Enabled = val
+        SaveConfig()
     end)
-    CreateSlider("Speed", 16, 300, 50, function(val)
+    CreateSlider("Speed", 16, 300, Config.Walkspeed.Speed, function(val)
         Config.Walkspeed.Speed = val
+        SaveConfig()
     end)
-    CreateToggle("👻 Noclip", false, function(val)
+    CreateToggle("👻 Noclip", Config.Noclip.Enabled, function(val)
         Config.Noclip.Enabled = val
+        SaveConfig()
     end)
+end
+
+-- Load saved config
+if LoadConfig() then
+    Notify("📂 Loaded saved settings!", 2)
 end
 
 SwitchTab("Aimbot")
@@ -864,7 +923,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if input.KeyCode == Enum.KeyCode.Insert then
         MainFrame.Visible = not MainFrame.Visible
     end
+    if input.KeyCode == Enum.KeyCode.End then
+        SaveConfig()
+    end
     if input.KeyCode == Enum.KeyCode.Delete then
+        SaveConfig() -- Auto save before destroy
         for _, conn in pairs(Connections) do conn:Disconnect() end
         for player, _ in pairs(ESPObjects) do removeESP(player) end
         if AimlockConnection then AimlockConnection:Disconnect() end
@@ -872,7 +935,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
         ScreenGui:Destroy()
         Notify("Script Destroyed!", 2)
     end
-end)
+end))
 
 --// EXPAND/COLLAPSE
 local IsExpanded = false
@@ -916,13 +979,12 @@ end)
 for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then createESP(p) end end
 
 wait(1)
-Notify("🎯 RanZx999 FIXED Loaded!", 3)
-Notify("✅ Aim perfect - No side offset!", 2)
+Notify("🎯 RanZx999 Hub Loaded!", 3)
+Notify("✅ Settings auto-saved!", 2)
 print("═══════════════════════════════════════════════════════")
-print("🎯 RanZx999 FIXED - ULTIMATE VERSION!")
-print("✅ AIM PERFECT - Langsung ke center target!")
-print("✅ UI STABIL - Cheat tetap jalan meski UI ditutup!")
-print("✅ Modern UI - Clean & Professional!")
-print("✅ Prediction default 0 - Aim langsung!")
-print("✅ INSERT: Toggle UI | DELETE: Destroy")
+print("🎯 RanZx999 Hub - COMPLETE VERSION!")
+print("✅ AIM PERFECT - No side offset!")
+print("✅ SAVE SETTINGS - Auto save config!")
+print("✅ STATUS SYNC - Toggle and label synced!")
+print("✅ INSERT: Toggle UI | END: Save | DELETE: Destroy")
 print("═══════════════════════════════════════════════════════")

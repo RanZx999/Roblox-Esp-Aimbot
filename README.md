@@ -17,17 +17,13 @@
 
 ## 📸 Preview
 
-### Main Interface
-<!-- Tambahkan screenshot UI utama di sini -->
-![Main UI](https://raw.githubusercontent.com/RanZx999/AllimageE/refs/heads/main/Screenshot%202026-02-15%20195954.png)
-
 ### Aimbot Tab
 <!-- Tambahkan screenshot tab aimbot di sini -->
-![Aimbot Tab](https://via.placeholder.com/800x450.png?text=Aimbot+Tab+Screenshot)
+![Aimbot Tab](https://raw.githubusercontent.com/RanZx999/AllimageE/refs/heads/main/Screenshot%202026-02-15%20195954.png)
 
 ### ESP Features
 <!-- Tambahkan screenshot ESP di sini -->
-![ESP Features](https://via.placeholder.com/800x450.png?text=ESP+Features+Screenshot)
+![ESP Features](https://raw.githubusercontent.com/RanZx999/AllimageE/refs/heads/main/Screenshot%202026-02-15%20200244.png)
 
 ---
 

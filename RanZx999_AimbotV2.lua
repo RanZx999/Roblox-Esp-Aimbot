@@ -1,18 +1,11 @@
 --[[
 ═══════════════════════════════════════════════════════════════
-  RanZx999 Hub - NO ERROR VERSION
+  RanZx999 Hub
 ═══════════════════════════════════════════════════════════════
-
-✅ AIM PERFECT - Tidak melenceng!
-✅ STATUS SYNC - Toggle dan status sinkron!
-✅ NO FILE ERROR - Tidak pakai writefile/readfile
-✅ UI STABIL - Cheat tetap jalan meski UI ditutup
-
 KEYBINDS:
 - INSERT: Toggle UI
 - H: Toggle Aimbot ON/OFF
 - DELETE: Destroy script
-
 Created by RanZx999
 ═══════════════════════════════════════════════════════════════
 ]]
@@ -591,12 +584,22 @@ local function CreateToggle(text, default, callback)
     knobCorner.Parent = knob
     
     local enabled = default
+    
+    -- Function to update toggle visuals
+    local function updateToggle(state)
+        enabled = state
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = state and Colors.Toggle_On or Colors.Toggle_Off}):Play()
+        TweenService:Create(knob, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+    end
+    
     button.MouseButton1Click:Connect(function()
         enabled = not enabled
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = enabled and Colors.Toggle_On or Colors.Toggle_Off}):Play()
-        TweenService:Create(knob, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+        updateToggle(enabled)
         if callback then callback(enabled) end
     end)
+    
+    -- Return update function so it can be called externally
+    return updateToggle
 end
 
 local function CreateSlider(text, min, max, default, callback)
@@ -750,7 +753,8 @@ end
 
 --// TAB CONTENTS
 function CreateAimbotTab()
-    CreateToggle("🎯 Enable Aimbot", Config.Aimlock.Enabled, function(val)
+    -- Store the update function globally
+    _G.AimbotToggleUpdate = CreateToggle("🎯 Enable Aimbot", Config.Aimlock.Enabled, function(val)
         Config.Aimlock.Enabled = val
         if val then
             StartAimlock()
@@ -766,6 +770,29 @@ function CreateAimbotTab()
             Notify("🎯 Aimbot OFF", 2)
         end
     end)
+    
+    -- Add keybind hint label
+    local keybindHint = Instance.new("Frame")
+    keybindHint.Size = UDim2.new(1, 0, 0, 30)
+    keybindHint.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+    keybindHint.BackgroundTransparency = 0.9
+    keybindHint.BorderSizePixel = 0
+    keybindHint.Parent = ContentFrame
+    
+    local hintCorner = Instance.new("UICorner")
+    hintCorner.CornerRadius = UDim.new(0, 8)
+    hintCorner.Parent = keybindHint
+    
+    local hintLabel = Instance.new("TextLabel")
+    hintLabel.Size = UDim2.new(1, -20, 1, 0)
+    hintLabel.Position = UDim2.new(0, 10, 0, 0)
+    hintLabel.BackgroundTransparency = 1
+    hintLabel.Text = "💡 Tip: Press H to quick toggle aimbot"
+    hintLabel.Font = Enum.Font.GothamBold
+    hintLabel.TextSize = 11
+    hintLabel.TextColor3 = Colors.Primary
+    hintLabel.TextXAlignment = Enum.TextXAlignment.Center
+    hintLabel.Parent = keybindHint
     
     CreateToggle("🔒 LOCK Mode (Instant)", Config.Aimlock.LockMode, function(val)
         Config.Aimlock.LockMode = val
@@ -854,6 +881,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
     -- Toggle Aimbot (H key)
     if input.KeyCode == Enum.KeyCode.H then
         Config.Aimlock.Enabled = not Config.Aimlock.Enabled
+        
+        -- Update toggle UI if it exists
+        if _G.AimbotToggleUpdate then
+            _G.AimbotToggleUpdate(Config.Aimlock.Enabled)
+        end
         
         if Config.Aimlock.Enabled then
             StartAimlock()

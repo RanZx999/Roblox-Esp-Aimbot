@@ -1,17 +1,11 @@
 --[[
 ═══════════════════════════════════════════════════════════════
-  RanZx999 Hub - FINAL VERSION
+  RanZx999 Hub 
 ═══════════════════════════════════════════════════════════════
 KEYBINDS:
 - INSERT: Toggle UI
 - H: Toggle Aimbot ON/OFF
 - DELETE: Destroy script
-
-NEW FEATURES:
-✅ FOV Circle (White = No enemy, Pink = Enemy detected) - THICK LINES
-✅ Fixed Random Aim (Changes only on new target, no jitter)
-✅ Highlight ESP (Green = Team, Pink = Enemy)
-
 Created by RanZx999
 ═══════════════════════════════════════════════════════════════
 ]]
@@ -100,8 +94,8 @@ local function createSmoothCircle()
     local numSegments = 360
     for i = 1, numSegments do
         local line = Drawing.new("Line")
-        line.Thickness = 3 -- GARIS TEBAL
-        line.Transparency = 1 -- Fully opaque
+        line.Thickness = 3 
+        line.Transparency = 1
         line.Color = FOVCircle.Color
         line.Visible = false
         table.insert(FOVCircle.Segments, line)
@@ -1094,14 +1088,14 @@ end)
 for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then createESP(p) end end
 
 wait(1)
-Notify("🎯 RanZx999 Hub Loaded!", 3)
-Notify("✅ Press H to toggle aimbot!", 2)
+Notify("RanZx999 Hub Loaded!", 3)
+Notify("Press H to toggle aimbot!", 2)
 print("═══════════════════════════════════════════════════════")
-print("🎯 RanZx999 Hub - FINAL VERSION!")
-print("✅ FOV Circle - THICK LINES (Thickness = 3)")
-print("✅ Fixed Random Aim - No more jitter!")
-print("✅ Highlight ESP - Green=Team, Pink=Enemy")
-print("✅ KEYBINDS:")
+print("RanZx999 Hub - FINAL VERSION!")
+print("FOV Circle - THICK LINES (Thickness = 3)")
+print("Fixed Random Aim - No more jitter!")
+print("Highlight ESP - Green=Team, Pink=Enemy")
+print("KEYBINDS:")
 print("   - INSERT: Toggle UI")
 print("   - H: Toggle Aimbot")
 print("   - DELETE: Destroy Script")

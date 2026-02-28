@@ -63,7 +63,7 @@
 
 ### Method 1: Direct Load (Recommended)
 ```lua
-loadstring(game:HttpGet('https://raw.githubusercontent.com/RanZx999/Roblox-Esp-Aimbot/refs/heads/main/RanZx999_AimbotV2.lua'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/RanZx999/Roblox-Esp-Aimbot/refs/heads/main/RanZx999_Aimbot.lua'))()
 ```
 ---
 
